@@ -1,0 +1,6 @@
+Flask
+Resemblyzer
+scipy
+numpy
+librosa
+whisper
