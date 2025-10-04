@@ -1,6 +1,7 @@
-Flask
-Resemblyzer
+flask
+resemblyzer
 scipy
 numpy
 librosa
+soundfile
 whisper
