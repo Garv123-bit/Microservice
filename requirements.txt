@@ -4,4 +4,4 @@ scipy
 numpy
 librosa
 soundfile
-whisper
+openai-whisper
