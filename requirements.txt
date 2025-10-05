@@ -1,7 +1,5 @@
-flask
-resemblyzer
-scipy
+Flask
 numpy
+scipy
 librosa
-soundfile
-openai-whisper
+Resemblyzer
