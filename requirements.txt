@@ -6,3 +6,4 @@ Resemblyzer
 torch
 soundfile
 audioread
+flask-cors
