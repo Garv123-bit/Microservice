@@ -3,3 +3,6 @@ numpy
 scipy
 librosa
 Resemblyzer
+torch
+soundfile
+audioread
