@@ -48,7 +48,10 @@ def verify_voice():
 def home():
     return "Voice Microservice Active ✅"
 
-# Local dev only
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+# --------------------------------------------------
+# Local development only
+# For production on Render, comment out app.run() and use gunicorn
+# --------------------------------------------------
+# if __name__ == '__main__':
+#     port = int(os.environ.get("PORT", 5000))
+#     app.run(host='0.0.0.0', port=port, debug=True)
