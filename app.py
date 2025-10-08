@@ -6,9 +6,15 @@ import numpy as np
 import librosa
 import tempfile
 import os
+import logging
 
 app = Flask(__name__)
 CORS(app)
+
+# Logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("voice-ms")
+
 encoder = VoiceEncoder()
 
 # Max chunk duration in seconds
@@ -17,6 +23,7 @@ MAX_CHUNK_SEC = 5
 @app.route('/embed', methods=['POST'])
 def embed_voice():
     try:
+        logger.info("POST /embed hit")
         if 'file' not in request.files:
             return jsonify({'error': 'No file part'}), 400
 
@@ -26,32 +33,31 @@ def embed_voice():
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
             file.save(tmp.name)
-            # Load full audio
-            wav, sr = librosa.load(tmp.name, sr=16000, mono=True)
+            tmp_path = tmp.name
 
-        os.remove(tmp.name)
+        # Load full audio
+        wav, sr = librosa.load(tmp_path, sr=16000, mono=True)
+        os.remove(tmp_path)
 
-        # Chunking parameters
-        max_chunk_sec = 5  # 5 sec per chunk
-        chunk_len = sr * max_chunk_sec
+        # Chunking
+        chunk_len = sr * MAX_CHUNK_SEC
         embeddings = []
 
-        # Split into chunks
         for start in range(0, len(wav), chunk_len):
-            end = start + chunk_len
-            chunk = wav[start:end]
+            chunk = wav[start:start + chunk_len]
             if len(chunk) == 0:
                 continue
             emb = encoder.embed_utterance(chunk)
             embeddings.append(emb)
 
-        # Average embeddings
-        final_embedding = np.mean(np.vstack(embeddings), axis=0)
+        if not embeddings:
+            return jsonify({'error': 'Audio too short or empty'}), 400
 
+        final_embedding = np.mean(np.vstack(embeddings), axis=0)
         return jsonify({'embedding': final_embedding.tolist()})
 
     except Exception as e:
-        print("Error:", e)
+        logger.error("Error in /embed: %s", str(e))
         return jsonify({'error': str(e)}), 500
 
 
@@ -65,13 +71,16 @@ def verify_voice():
         is_match = similarity >= 0.75
         return jsonify({'similarity': float(similarity), 'match': is_match})
     except Exception as e:
-        print("Error:", e)
+        logger.error("Error in /verify: %s", str(e))
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/')
 def home():
     return "Voice Microservice Active ✅"
 
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    logger.info("Starting Flask server on port %d", port)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
