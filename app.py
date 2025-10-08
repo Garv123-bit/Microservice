@@ -26,30 +26,34 @@ def embed_voice():
 
         with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
             file.save(tmp.name)
-            tmp_path = tmp.name
+            # Load full audio
+            wav, sr = librosa.load(tmp.name, sr=16000, mono=True)
 
-        # Load full audio
-        wav, sr = librosa.load(tmp_path, sr=16000)
-        os.remove(tmp_path)
+        os.remove(tmp.name)
 
-        # Break into chunks
+        # Chunking parameters
+        max_chunk_sec = 5  # 5 sec per chunk
+        chunk_len = sr * max_chunk_sec
         embeddings = []
-        total_samples = wav.shape[0]
-        chunk_samples = int(MAX_CHUNK_SEC * sr)
-        for start in range(0, total_samples, chunk_samples):
-            end = min(start + chunk_samples, total_samples)
-            chunk_wav = wav[start:end]
-            chunk_emb = encoder.embed_utterance(chunk_wav)
-            embeddings.append(chunk_emb)
 
-        # Average all chunk embeddings
-        final_embedding = np.mean(np.stack(embeddings), axis=0)
+        # Split into chunks
+        for start in range(0, len(wav), chunk_len):
+            end = start + chunk_len
+            chunk = wav[start:end]
+            if len(chunk) == 0:
+                continue
+            emb = encoder.embed_utterance(chunk)
+            embeddings.append(emb)
+
+        # Average embeddings
+        final_embedding = np.mean(np.vstack(embeddings), axis=0)
 
         return jsonify({'embedding': final_embedding.tolist()})
 
     except Exception as e:
         print("Error:", e)
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/verify', methods=['POST'])
 def verify_voice():
